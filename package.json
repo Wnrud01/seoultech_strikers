@@ -1,0 +1,10 @@
+{
+  "name": "localmon-go-prototype",
+  "version": "1.0.0",
+  "description": "로컬몬 GO 전남편 - 예선 프로토타입 (지도/체크인/캐릭터 목업 + CLOVA OCR 실연동)",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  }
+}
