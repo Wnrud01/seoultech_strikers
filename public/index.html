@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>로컬몬 · 전남</title>
+<style>
+  :root{
+    --green-900:#1c3d24; --green-700:#2e5e3a; --green-500:#3f8552; --green-300:#7bb58c;
+    --gold:#e0a021; --gold-deep:#a9760b;
+    --cream:#faf6ea; --cream-2:#f0e8d2; --paper:#fffdf7;
+    --ink:#222a1f; --muted:#727a68;
+    --rare:#7b4fd0; --rare-bg:#efe7fb;
+    --epic:#c0392b; --legend:#d4a017;
+    --shadow:0 8px 26px rgba(28,61,36,.14);
+    --shadow-lg:0 16px 40px rgba(28,61,36,.2);
+    --r:20px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    background:linear-gradient(165deg,#d6ecda,#f3ecd6);
+    color:var(--ink); display:flex; justify-content:center; min-height:100vh;
+  }
+  .phone{ width:100%; max-width:412px; min-height:100vh; background:var(--cream);
+    position:relative; overflow:hidden; box-shadow:var(--shadow-lg); }
+
+  /* 헤더 */
+  .topbar{ position:sticky; top:0; z-index:40; background:var(--green-700);
+    color:#fff; padding:13px 18px; display:flex; align-items:center; justify-content:space-between; }
+  .brand{ font-size:17px; font-weight:800; letter-spacing:-.3px; display:flex; align-items:center; gap:8px;}
+  .brand .m{ width:26px;height:26px;border-radius:8px;object-fit:contain; background:#fff2; }
+  .hud{ display:flex; gap:8px; font-size:12px; font-weight:800;}
+  .hud span{ background:rgba(255,255,255,.15); padding:5px 10px; border-radius:999px;}
+  .hud b{ color:var(--gold);}
+
+  /* 화면 */
+  .view{ display:none; padding:18px 16px 96px; animation:fade .3s ease;}
+  .view.on{ display:block;}
+  @keyframes fade{ from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:none;}}
+  .eyebrow{ font-size:11px; font-weight:800; letter-spacing:2px; color:var(--green-500); text-transform:uppercase;}
+  h1.t{ font-size:22px; margin:5px 0 3px; letter-spacing:-.4px;}
+  .sub{ color:var(--muted); font-size:13.5px; margin:0 0 16px; line-height:1.55;}
+
+  /* 카드 */
+  .card{ background:var(--paper); border-radius:var(--r); padding:18px; box-shadow:var(--shadow); margin-bottom:14px;}
+
+  /* 지도 */
+  .map{ position:relative; border-radius:var(--r); overflow:hidden; height:340px; border:3px solid #fff;
+    box-shadow:var(--shadow);
+    background:radial-gradient(circle at 28% 32%,#cfe8d3,transparent 55%),
+      radial-gradient(circle at 74% 66%,#e7dcae,transparent 52%),
+      linear-gradient(135deg,#bfe0c4,#e9dfb2);}
+  .map .lbl{ position:absolute; top:12px; left:13px; background:rgba(28,61,36,.82); color:#fff;
+    font-size:11.5px; font-weight:800; padding:5px 11px; border-radius:999px;}
+  .pin{ position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column;
+    align-items:center; gap:2px; cursor:pointer;}
+  .pin .bub{ width:38px;height:38px;border-radius:50% 50% 50% 8px; background:#fff; display:grid;
+    place-items:center; font-size:19px; box-shadow:0 5px 12px rgba(0,0,0,.22); transform:rotate(45deg);
+    border:2px solid var(--green-500); transition:transform .15s;}
+  .pin .bub span{ transform:rotate(-45deg);}
+  .pin:active .bub{ transform:rotate(45deg) scale(.9);}
+  .pin .cap{ font-size:10px; font-weight:800; background:#fff; padding:2px 6px; border-radius:999px;
+    box-shadow:0 2px 5px rgba(0,0,0,.15); white-space:nowrap;}
+  .pin.rare .bub{ border-color:var(--rare); background:var(--rare-bg);}
+  .pin.done .bub{ border-color:var(--gold); background:#fdf3d9;}
+
+  .hint{ text-align:center; font-size:12px; color:var(--muted); margin-top:12px;}
+
+  /* 시장 상세 */
+  .mkt-head{ display:flex; align-items:center; gap:13px;}
+  .mkt-emoji{ width:56px;height:56px;border-radius:15px;background:var(--cream-2); display:grid; place-items:center; font-size:29px;}
+  .mkt-head h2{ margin:0; font-size:18px;}
+  .mkt-head p{ margin:2px 0 0; font-size:12.5px; color:var(--muted);}
+  .chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:12px;}
+  .chip{ font-size:11.5px; font-weight:700; background:var(--cream-2); color:var(--green-900); padding:5px 10px; border-radius:999px;}
+  .chip.rare{ background:var(--rare-bg); color:var(--rare);}
+
+  /* 캐릭터 스테이지 */
+  .stage{ text-align:center; padding:6px 0 2px;}
+  .char{ width:160px;height:160px;margin:0 auto 4px; border-radius:50%;
+    background:radial-gradient(circle at 50% 38%,#fff,var(--cream-2));
+    display:grid; place-items:center; box-shadow:inset 0 0 0 4px #fff,var(--shadow); position:relative;}
+  .char img{ width:132px;height:132px;object-fit:contain; filter:drop-shadow(0 4px 6px rgba(0,0,0,.15));}
+  .char.pop{ animation:pop .6s ease;}
+  @keyframes pop{ 0%{transform:scale(1);}40%{transform:scale(1.15) rotate(-3deg);}70%{transform:scale(.96);}100%{transform:scale(1);}}
+  .cname{ font-weight:800; font-size:17px;}
+  .tier{ font-size:11px; font-weight:800; color:#fff; display:inline-block; padding:3px 10px; border-radius:999px; margin-top:4px;}
+  .tier.normal{background:var(--green-300);} .tier.rare{background:var(--rare);}
+  .tier.rareK{background:var(--green-500);} .tier.epic{background:var(--epic);} .tier.legend{background:var(--legend);}
+
+  .lv{ display:flex; align-items:center; justify-content:space-between; font-size:12.5px; font-weight:800; margin:14px 0 5px;}
+  .xpbar{ height:15px; background:var(--cream-2); border-radius:999px; overflow:hidden;}
+  .xpfill{ height:100%; width:0%; background:linear-gradient(90deg,var(--green-500),var(--gold)); border-radius:999px; transition:width 1s cubic-bezier(.2,.8,.2,1);}
+
+  /* 버튼 */
+  .btn{ display:block; width:100%; border:none; border-radius:15px; padding:15px; font-size:15.5px;
+    font-weight:800; cursor:pointer; font-family:inherit; transition:transform .1s,filter .2s;}
+  .btn:active{ transform:scale(.98);}
+  .btn-primary{ background:var(--green-700); color:#fff; box-shadow:0 7px 16px rgba(46,94,58,.32);}
+  .btn-gold{ background:var(--gold); color:#4a3400; box-shadow:0 7px 16px rgba(224,160,33,.38);}
+  .btn-ghost{ background:transparent; color:var(--green-700); box-shadow:inset 0 0 0 2px var(--green-500);}
+  .btn+.btn{ margin-top:9px;}
+
+  /* 촬영 */
+  .shoot{ display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border:2.5px dashed var(--green-500); border-radius:var(--r); padding:30px 16px; text-align:center;
+    background:var(--paper); cursor:pointer; transition:background .2s;}
+  .shoot:active{ background:var(--cream-2);}
+  .shoot .ico{ font-size:42px; line-height:1;}
+  .shoot p{ margin:11px 0 3px; font-weight:800; color:var(--green-900); font-size:15px;}
+  .shoot small{ color:var(--muted);}
+  #preview{ width:100%; border-radius:14px; margin-top:11px; display:none;}
+  input[type=file]{ display:none;}
+  .loading{ text-align:center; padding:18px; display:none;}
+  .loading.show{ display:block;}
+  .spin{ width:32px;height:32px;border:4px solid var(--cream-2); border-top-color:var(--green-500);
+    border-radius:50%; margin:0 auto 9px; animation:spin 1s linear infinite;}
+  @keyframes spin{ to{transform:rotate(360deg);}}
+
+  /* 보상 */
+  .reward{ background:linear-gradient(135deg,#fff,var(--cream-2)); border:2px solid var(--gold);
+    border-radius:var(--r); padding:16px; margin-top:12px; display:none; animation:pop .5s ease;}
+  .reward.show{ display:block;}
+  .reward .big{ font-size:16px; font-weight:800; color:var(--gold-deep);}
+  .reward .row{ display:flex; justify-content:space-between; margin-top:9px; font-size:13.5px;}
+  .reward .row b{ color:var(--green-700);}
+
+  /* 도감 그리드 */
+  .grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:11px;}
+  .dex{ background:var(--paper); border-radius:16px; padding:13px; box-shadow:var(--shadow); text-align:center; position:relative;}
+  .dex img{ width:78px;height:78px;object-fit:contain;}
+  .dex.locked img{ filter:grayscale(1) brightness(.4) opacity(.55);}
+  .dex.locked::after{ content:"🔒"; position:absolute; top:50%; left:50%; transform:translate(-50%,-60%); font-size:26px;}
+  .dex .n{ font-size:13px; font-weight:800; margin-top:5px;}
+  .dex .g{ font-size:10.5px; color:var(--muted);}
+  .dex .badge{ position:absolute; top:8px; right:8px; font-size:9.5px; font-weight:800; color:#fff; padding:2px 7px; border-radius:999px;}
+
+  .progress-wrap{ background:var(--paper); border-radius:16px; padding:14px 16px; box-shadow:var(--shadow); margin-bottom:14px;}
+  .progress-wrap .top{ display:flex; justify-content:space-between; font-size:13px; font-weight:800; margin-bottom:8px;}
+  .pbar{ height:12px; background:var(--cream-2); border-radius:999px; overflow:hidden;}
+  .pfill{ height:100%; background:linear-gradient(90deg,var(--green-500),var(--gold)); border-radius:999px;}
+
+  /* 랭크/먹이/업적 테이블 */
+  .rank-row,.feed-row,.ach-row{ display:flex; align-items:center; gap:11px; padding:11px 0; border-bottom:1px solid #eee5cf;}
+  .rank-row:last-child,.feed-row:last-child,.ach-row:last-child{ border-bottom:none;}
+  .rank-ic{ width:40px; text-align:center; font-size:15px; font-weight:800; flex-shrink:0;}
+  .rank-body{ flex:1;}
+  .rank-body .n{ font-weight:800; font-size:14px;}
+  .rank-body .d{ font-size:11.5px; color:var(--muted); margin-top:1px;}
+  .rank-pt{ font-size:12.5px; font-weight:800; color:var(--gold-deep); flex-shrink:0;}
+  .feed-tag{ font-size:10px; font-weight:800; padding:3px 8px; border-radius:999px; color:#fff; flex-shrink:0;}
+
+  /* 포인트 화면 */
+  .point-hero{ background:linear-gradient(135deg,var(--green-700),var(--green-500)); color:#fff;
+    border-radius:var(--r); padding:22px; text-align:center; box-shadow:var(--shadow); margin-bottom:14px;}
+  .point-hero .amt{ font-size:38px; font-weight:800; letter-spacing:-1px;}
+  .point-hero .lbl{ font-size:12.5px; opacity:.85; margin-top:2px;}
+  .conv{ display:flex; gap:9px; margin-top:15px;}
+  .conv button{ flex:1; background:rgba(255,255,255,.16); color:#fff; border:none; border-radius:13px;
+    padding:12px 6px; font-weight:800; font-size:12.5px; font-family:inherit; cursor:pointer;}
+
+  /* 탭바 */
+  .tabbar{ position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:412px;
+    background:#fff; display:flex; justify-content:space-around; padding:9px 0 13px;
+    box-shadow:0 -5px 18px rgba(0,0,0,.06); z-index:50;}
+  .tab{ background:none; border:none; text-align:center; font-size:10px; color:var(--muted); font-weight:700;
+    font-family:inherit; cursor:pointer; padding:2px 10px;}
+  .tab .ic{ font-size:19px; display:block; margin-bottom:1px;}
+  .tab.on{ color:var(--green-700);}
+
+  .toast{ position:fixed; bottom:86px; left:50%; transform:translateX(-50%) translateY(18px);
+    background:var(--ink); color:#fff; padding:11px 18px; border-radius:999px; font-size:13.5px;
+    font-weight:700; opacity:0; transition:.3s; z-index:60; pointer-events:none; max-width:80%; text-align:center;}
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0);}
+  .stepnote{ font-size:10.5px; color:var(--muted); text-align:center; margin-top:14px; opacity:.7;}
+  .sec-title{ font-size:15px; font-weight:800; margin:2px 0 10px; display:flex; align-items:center; gap:6px;}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="topbar">
+    <div class="brand"><img class="m" src="/characters/mascot.png" alt="">로컬몬 · 전남</div>
+    <div class="hud">
+      <span>⭐ <b id="hudPoint">0</b></span>
+      <span>📕 <b id="hudDex">0</b>/7</span>
+    </div>
+  </div>
+
+  <!-- ============ 탐험 탭 ============ -->
+  <section class="view on" id="v-explore">
+    <!-- 지도 -->
+    <div id="explore-map">
+      <div class="eyebrow">Jeonnam · 22 Cities</div>
+      <h1 class="t">전남에서 로컬몬을 찾아요</h1>
+      <p class="sub">지역을 눌러 방문해보세요. 소외된 지역엔 희귀 로컬몬이 나타나요.</p>
+      <div class="map" id="mapPins"><div class="lbl">🗺️ 전라남도</div></div>
+      <p class="hint">👆 마커를 눌러 지역에 방문하세요</p>
+    </div>
+
+    <!-- 시장 도착 -->
+    <div id="explore-market" style="display:none;">
+      <div class="eyebrow">Arrived</div>
+      <h1 class="t" id="mktTitle">나주 남평장</h1>
+      <p class="sub">GPS로 자동 체크인되었습니다.</p>
+      <div class="card">
+        <div class="mkt-head">
+          <div class="mkt-emoji" id="mktEmoji">🍐</div>
+          <div><h2 id="mktName">나주 남평장</h2><p id="mktInfo">5·10일 오일장 · 나주시</p></div>
+        </div>
+        <div class="chips" id="mktChips"></div>
+      </div>
+      <div class="reward show" style="border-color:var(--green-500);">
+        <div class="big" style="color:var(--green-700)">📍 GPS 체크인 완료!</div>
+        <div class="row"><span>방문 보상</span><b>+50 P</b></div>
+      </div>
+      <button class="btn btn-primary" style="margin-top:14px" onclick="gotoShoot()">영수증으로 먹이 주기 →</button>
+      <button class="btn btn-ghost" onclick="backToMap()">지도로 돌아가기</button>
+    </div>
+
+    <!-- 영수증 촬영 -->
+    <div id="explore-shoot" style="display:none;">
+      <div class="eyebrow">Real Purchase</div>
+      <h1 class="t">영수증으로 먹이를 주세요</h1>
+      <p class="sub">구매 영수증을 찍으면 먹이로 바뀌어요. <b>전남 특산물</b>은 10배 경험치!</p>
+      <label class="shoot" for="file">
+        <div class="ico">🧾</div><p>영수증 촬영 / 업로드</p><small>탭해서 사진을 선택하세요</small>
+      </label>
+      <input type="file" id="file" accept="image/*" capture="environment" onchange="handleReceipt(event)" />
+      <img id="preview" alt="" />
+      <div class="loading" id="loading"><div class="spin"></div><p style="font-weight:800;color:var(--green-700)">영수증을 읽고 있어요…</p></div>
+      <div class="reward" id="reward">
+        <div class="big" id="rTitle">🎉 특산물 먹이 획득!</div>
+        <div class="row"><span id="rItem"></span><b id="rFood"></b></div>
+        <div class="row"><span>획득 경험치</span><b id="rXp"></b></div>
+        <div class="row"><span>포인트 적립</span><b id="rPt"></b></div>
+        <button class="btn btn-gold" style="margin-top:12px" onclick="feedChar()">캐릭터에게 먹이 주기 →</button>
+      </div>
+      <button class="btn btn-ghost" style="margin-top:12px" onclick="backToMarket()">뒤로</button>
+    </div>
+
+    <!-- 캐릭터 성장 -->
+    <div id="explore-grow" style="display:none;">
+      <div class="eyebrow">Level Up</div>
+      <h1 class="t" id="growTitle">배돌이가 성장했어요!</h1>
+      <div class="card">
+        <div class="stage">
+          <div class="char" id="charBox"><img id="charImg" src="/characters/baedori.png" alt=""></div>
+          <div class="cname" id="growName">배돌이</div>
+          <div class="tier rareK" id="growTier">★★ 희귀 · 나주 배</div>
+          <div class="lv"><span>누적 <span id="xpNum">0</span> XP</span><span id="xpTxt"></span></div>
+          <div class="xpbar"><div class="xpfill" id="xpfill"></div></div>
+        </div>
+      </div>
+      <div class="reward show"><div class="big">✨ 획득 보상</div>
+        <div class="row"><span>보유 포인트</span><b id="growPoint">0 P</b></div>
+        <div class="row"><span>도감 등록</span><b id="growDex">배돌이 ✓</b></div>
+      </div>
+      <button class="btn btn-primary" style="margin-top:14px" onclick="switchTab('point')">포인트 쓰러 가기 →</button>
+      <button class="btn btn-ghost" onclick="backToMap()">계속 탐험하기</button>
+    </div>
+  </section>
+
+  <!-- ============ 도감 탭 ============ -->
+  <section class="view" id="v-dex">
+    <div class="eyebrow">Pokédex</div>
+    <h1 class="t">로컬몬 도감</h1>
+    <p class="sub">전남 지역에서 만난 로컬몬을 모아보세요.</p>
+    <div class="progress-wrap">
+      <div class="top"><span>수집 현황</span><span id="dexCount">0 / 7</span></div>
+      <div class="pbar"><div class="pfill" id="dexFill" style="width:0%"></div></div>
+    </div>
+    <div class="grid" id="dexGrid"></div>
+  </section>
+
+  <!-- ============ 포인트 탭 ============ -->
+  <section class="view" id="v-point">
+    <div class="eyebrow">Rewards</div>
+    <h1 class="t">포인트 &amp; 보상</h1>
+    <div class="point-hero">
+      <div class="amt"><span id="bigPoint">0</span> P</div>
+      <div class="lbl">1P = 1원 · 온누리상품권/지역화폐 전환 가능</div>
+      <div class="conv">
+        <button onclick="convert('온누리상품권')">온누리상품권</button>
+        <button onclick="convert('지역화폐')">지역화폐</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec-title">🏅 랭크 시스템</div>
+      <div id="rankList"></div>
+    </div>
+    <div class="card">
+      <div class="sec-title">🍽️ 먹이 등급</div>
+      <div id="feedList"></div>
+    </div>
+    <div class="card">
+      <div class="sec-title">🎯 업적</div>
+      <div id="achList"></div>
+    </div>
+  </section>
+
+  <!-- ============ 내정보 탭 ============ -->
+  <section class="view" id="v-me">
+    <div class="eyebrow">Profile</div>
+    <h1 class="t">내 정보</h1>
+    <div class="card" style="text-align:center;">
+      <img src="/characters/mascot.png" style="width:90px;height:90px;object-fit:contain;" alt="">
+      <div style="font-weight:800;font-size:17px;margin-top:6px;">전남 탐험가</div>
+      <div style="color:var(--muted);font-size:12.5px;">Strikers 팀 데모 계정</div>
+    </div>
+    <div class="card">
+      <div class="rank-row"><div class="rank-ic">⭐</div><div class="rank-body"><div class="n">보유 포인트</div></div><div class="rank-pt" id="mePoint">0 P</div></div>
+      <div class="rank-row"><div class="rank-ic">📕</div><div class="rank-body"><div class="n">수집한 로컬몬</div></div><div class="rank-pt" id="meDex">0 / 7</div></div>
+      <div class="rank-row"><div class="rank-ic">📍</div><div class="rank-body"><div class="n">방문한 지역</div></div><div class="rank-pt" id="meVisit">0</div></div>
+    </div>
+    <p class="stepnote">로컬몬 · 전남 — 예선 프로토타입 · Team Strikers</p>
+  </section>
+
+  <!-- 탭바 -->
+  <nav class="tabbar">
+    <button class="tab on" data-tab="explore" onclick="switchTab('explore')"><span class="ic">🗺️</span>탐험</button>
+    <button class="tab" data-tab="dex" onclick="switchTab('dex')"><span class="ic">📕</span>도감</button>
+    <button class="tab" data-tab="point" onclick="switchTab('point')"><span class="ic">🎁</span>포인트</button>
+    <button class="tab" data-tab="me" onclick="switchTab('me')"><span class="ic">👤</span>내정보</button>
+  </nav>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================================================================
+   ⬇⬇⬇  여기(DATA)만 고치면 앱 내용이 바뀝니다  ⬇⬇⬇
+   ================================================================ */
+
+// 1) 캐릭터 & 시장 (지도 마커 + 도감 + 특산물 매칭이 여기서 나옴)
+const MARKETS = [
+  { id:"naju",  name:"나주 남평장", city:"나주시", info:"5·10일 오일장 · 나주시", emoji:"🍐",
+    x:30, y:70, rare:false,
+    char:{ key:"baedori",  name:"배돌이",   img:"baedori.png",   tier:"희귀", grade:"rareK", motif:"나주 배" },
+    specialties:[
+      { key:["나주배","배"],   name:"나주 배",   emoji:"🍐", type:"special" },
+      { key:["곰탕"],          name:"나주 곰탕", emoji:"🍲", type:"local" },
+      { key:["홍어"],          name:"홍어",      emoji:"🐟", type:"local" },
+    ]},
+  { id:"yeosu", name:"여수 서시장", city:"여수시", info:"매일 상설 · 여수시", emoji:"🐟",
+    x:68, y:80, rare:false,
+    char:{ key:"gatsuni", name:"갓순이", img:"gatsuni.png", tier:"희귀", grade:"rareK", motif:"돌산갓" },
+    specialties:[
+      { key:["돌산갓","갓김치","갓"], name:"여수 돌산갓", emoji:"🥬", type:"special" },
+    ]},
+  { id:"mokpo", name:"목포 남부시장", city:"목포시", info:"매일 상설 · 목포시", emoji:"🐙",
+    x:55, y:56, rare:true,
+    char:{ key:"nakjiwang", name:"낙지왕", img:"nakjiwang.png", tier:"레어", grade:"epic", motif:"세발낙지" },
+    specialties:[
+      { key:["세발낙지","낙지"], name:"목포 세발낙지", emoji:"🐙", type:"special" },
+    ]},
+  { id:"boseong", name:"보성 벌교장", city:"보성군", info:"4·9일 오일장 · 보성군", emoji:"🍵",
+    x:44, y:44, rare:false,
+    char:{ key:"nokcha", name:"녹차선인", img:"nokcha.png", tier:"에픽", grade:"epic", motif:"보성 녹차" },
+    specialties:[
+      { key:["보성녹차","녹차"], name:"보성 녹차", emoji:"🍵", type:"special" },
+      { key:["꼬막"], name:"벌교 꼬막", emoji:"🦪", type:"local" },
+    ]},
+  { id:"damyang", name:"담양장", city:"담양군", info:"2·7일 오일장 · 담양군", emoji:"🎋",
+    x:52, y:28, rare:false,
+    char:{ key:"juksuni", name:"죽순이", img:"juksuni.png", tier:"희귀", grade:"rareK", motif:"담양 대나무" },
+    specialties:[
+      { key:["죽순"], name:"담양 죽순", emoji:"🎋", type:"special" },
+      { key:["떡갈비"], name:"담양 떡갈비", emoji:"🍖", type:"local" },
+    ]},
+  { id:"jindo", name:"진도읍장", city:"진도군", info:"1·6일 오일장 · 진도군", emoji:"🐕",
+    x:22, y:64, rare:true,
+    char:{ key:"jindo", name:"진도댕이", img:"jindo.png", tier:"전설", grade:"legend", motif:"진도개" },
+    specialties:[
+      { key:["구기자"], name:"진도 구기자", emoji:"🔴", type:"special" },
+      { key:["진도홍주","홍주"], name:"진도 홍주", emoji:"🍶", type:"local" },
+    ]},
+  { id:"goheung", name:"고흥장", city:"고흥군", info:"4·9일 오일장 · 고흥군", emoji:"🍋",
+    x:60, y:70, rare:false,
+    char:{ key:"yuja", name:"유자봉", img:"yuja.png", tier:"에픽", grade:"epic", motif:"고흥 유자" },
+    specialties:[
+      { key:["유자"], name:"고흥 유자", emoji:"🍋", type:"special" },
+      { key:["석류"], name:"고흥 석류", emoji:"🔴", type:"local" },
+    ]},
+];
+
+// 2) 먹이 등급 (기획서 Step2 표)
+const FEED = {
+  general: { name:"일반 먹이",       xp:10,  color:"#9aa088", note:"타 지역 산지 식품" },
+  local:   { name:"지역 먹이",       xp:30,  color:"#3f8552", note:"전남 지역 농수산물" },
+  special: { name:"특산물 전용 먹이", xp:100, color:"#e0a021", note:"전남 대표 특산물" },
+};
+
+// 3) 랭크 시스템 (기획서 5단계 표)
+const RANKS = [
+  { star:"★",     name:"노말", xp:0,     pt:250,   grade:"normal", desc:"기본 캐릭터" },
+  { star:"★★",    name:"희귀", xp:200,   pt:500,   grade:"rareK",  desc:"특산물 특징 일부 표현" },
+  { star:"★★★",   name:"레어", xp:1000,  pt:1500,  grade:"rare",   desc:"특산물 의상·장비 착용" },
+  { star:"★★★★",  name:"에픽", xp:5000,  pt:3000,  grade:"epic",   desc:"특산물 속성 강화(이펙트)" },
+  { star:"★★★★★", name:"전설", xp:30000, pt:10000, grade:"legend", desc:"완전 진화형(전설 외형)" },
+];
+
+// 4) 업적 (기획서 표)
+const ACHIEVEMENTS = [
+  { name:"특산물 마니아",  cond:"전남 특산물 5종 이상 구매 인증", pt:1000 },
+  { name:"전남 순례자",    cond:"3개 이상 지역 방문 인증",        pt:800 },
+  { name:"단골 손님",      cond:"동일 지역 3회 이상 재방문",       pt:500 },
+  { name:"큰손",           cond:"단일 방문 3만원 이상 구매 인증",  pt:600 },
+  { name:"전남 완전 정복", cond:"7개 지역 전체 방문",             pt:10000 },
+];
+
+/* ================================================================
+   ⬆⬆⬆  여기까지가 DATA. 아래는 동작 로직 (안 건드려도 됨)  ⬆⬆⬆
+   ================================================================ */
+
+let state = { point:0, dex:[], visits:0, currentMarket:null, lastReward:null };
+
+// ---- 초기 렌더 ----
+function renderMap(){
+  const map = document.getElementById("mapPins");
+  map.querySelectorAll(".pin").forEach(p=>p.remove());
+  MARKETS.forEach(m=>{
+    const collected = state.dex.includes(m.char.key);
+    const pin = document.createElement("div");
+    pin.className = "pin" + (m.rare?" rare":"") + (collected?" done":"");
+    pin.style.left = m.x+"%"; pin.style.top = m.y+"%";
+    pin.innerHTML = `<div class="bub"><span>${m.emoji}</span></div><div class="cap">${m.name}</div>`;
+    pin.onclick = ()=>arriveMarket(m.id);
+    map.appendChild(pin);
+  });
+}
+function renderDex(){
+  const grid = document.getElementById("dexGrid");
+  grid.innerHTML = "";
+  MARKETS.forEach(m=>{
+    const got = state.dex.includes(m.char.key);
+    const c = m.char;
+    const el = document.createElement("div");
+    el.className = "dex" + (got?"":" locked");
+    el.innerHTML = `
+      ${got?`<div class="badge tier ${c.grade}" style="position:absolute;">${c.tier}</div>`:""}
+      <img src="/characters/${c.img}" alt="">
+      <div class="n">${got?c.name:"???"}</div>
+      <div class="g">${got?c.motif:"미수집"}</div>`;
+    grid.appendChild(el);
+  });
+  document.getElementById("dexCount").textContent = `${state.dex.length} / 7`;
+  document.getElementById("dexFill").style.width = (state.dex.length/7*100)+"%";
+}
+function renderPointTab(){
+  document.getElementById("bigPoint").textContent = state.point;
+  const rl = document.getElementById("rankList");
+  rl.innerHTML = RANKS.map(r=>`
+    <div class="rank-row">
+      <div class="rank-ic tier ${r.grade}" style="color:#fff;border-radius:8px;padding:3px 0;">${r.star}</div>
+      <div class="rank-body"><div class="n">${r.name} · ${r.xp.toLocaleString()} XP</div><div class="d">${r.desc}</div></div>
+      <div class="rank-pt">${r.pt.toLocaleString()}P</div>
+    </div>`).join("");
+  const fl = document.getElementById("feedList");
+  fl.innerHTML = Object.values(FEED).map(f=>`
+    <div class="feed-row">
+      <div class="feed-tag" style="background:${f.color}">+${f.xp} XP</div>
+      <div class="rank-body"><div class="n">${f.name}</div><div class="d">${f.note}</div></div>
+    </div>`).join("");
+  const al = document.getElementById("achList");
+  al.innerHTML = ACHIEVEMENTS.map(a=>`
+    <div class="ach-row">
+      <div class="rank-ic">🎯</div>
+      <div class="rank-body"><div class="n">${a.name}</div><div class="d">${a.cond}</div></div>
+      <div class="rank-pt">+${a.pt.toLocaleString()}P</div>
+    </div>`).join("");
+}
+function renderMe(){
+  document.getElementById("mePoint").textContent = state.point+" P";
+  document.getElementById("meDex").textContent = state.dex.length+" / 7";
+  document.getElementById("meVisit").textContent = state.visits;
+}
+function syncHud(){
+  document.getElementById("hudPoint").textContent = state.point;
+  document.getElementById("hudDex").textContent = state.dex.length;
+}
+
+// ---- 탭 전환 ----
+function switchTab(tab){
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("on"));
+  document.getElementById("v-"+tab).classList.add("on");
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on", t.dataset.tab===tab));
+  if(tab==="dex") renderDex();
+  if(tab==="point") renderPointTab();
+  if(tab==="me") renderMe();
+  window.scrollTo(0,0);
+}
+
+// ---- 탐험 흐름 ----
+function showExplore(id){
+  ["map","market","shoot","grow"].forEach(s=>{
+    document.getElementById("explore-"+s).style.display = (s===id)?"block":"none";
+  });
+  window.scrollTo(0,0);
+}
+function arriveMarket(mid){
+  const m = MARKETS.find(x=>x.id===mid);
+  state.currentMarket = m;
+  state.visits++;
+  document.getElementById("mktTitle").textContent = m.name+"에 도착!";
+  document.getElementById("mktName").textContent = m.name;
+  document.getElementById("mktInfo").textContent = m.info;
+  document.getElementById("mktEmoji").textContent = m.emoji;
+  const chips = document.getElementById("mktChips");
+  chips.innerHTML = m.specialties.map(s=>`<span class="chip">${s.emoji} ${s.name}</span>`).join("")
+    + `<span class="chip rare">✦ ${m.char.name} 출현중</span>`;
+  addPoint(50);
+  showExplore("market");
+}
+function backToMap(){ showExplore("map"); renderMap(); }
+function backToMarket(){ showExplore("market"); }
+function gotoShoot(){
+  document.getElementById("reward").classList.remove("show");
+  document.getElementById("preview").style.display="none";
+  document.getElementById("file").value="";
+  showExplore("shoot");
+}
+
+// ---- 영수증 OCR ----
+async function handleReceipt(e){
+  const f = e.target.files[0]; if(!f) return;
+  const reader = new FileReader();
+  reader.onload = async ev=>{
+    const dataUrl = ev.target.result;
+    const pv = document.getElementById("preview");
+    pv.src = dataUrl; pv.style.display="block";
+    document.getElementById("loading").classList.add("show");
+    document.getElementById("reward").classList.remove("show");
+    try{
+      const res = await fetch("/api/ocr",{ method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ imageBase64:dataUrl, format: f.type.includes("png")?"png":"jpg" }) });
+      const data = await res.json();
+      document.getElementById("loading").classList.remove("show");
+      if(!res.ok){ toast("OCR 연결 확인 필요 — 데모 모드"); return matchReward(sampleText()); }
+      matchReward(data.fullText||"");
+    }catch(err){
+      document.getElementById("loading").classList.remove("show");
+      toast("네트워크 오류 — 데모 모드"); matchReward(sampleText());
+    }
+  };
+  reader.readAsDataURL(f);
+}
+function sampleText(){
+  // 데모 폴백: 현재 시장의 대표 특산물이 찍힌 것처럼
+  const m = state.currentMarket || MARKETS[0];
+  const sp = m.specialties.find(s=>s.type==="special") || m.specialties[0];
+  return sp.key[0] + " 1개 15000 합계 15000";
+}
+function matchReward(text){
+  const clean = text.replace(/\s/g,"");
+  const m = state.currentMarket || MARKETS[0];
+  let matched=null;
+  for(const s of m.specialties){
+    if(s.key.some(k=>clean.includes(k.replace(/\s/g,"")))){ matched=s; break; }
+  }
+  const box = document.getElementById("reward");
+  let feed, itemName, emoji;
+  if(matched){ feed = FEED[matched.type]; itemName = matched.name; emoji = matched.emoji; }
+  else { feed = FEED.general; itemName = "일반 구매"; emoji = "🍪"; }
+  const pt = Math.round(feed.xp * 1.2);
+  document.getElementById("rTitle").textContent = matched && matched.type==="special" ? "🎉 특산물 전용 먹이 획득!" : (matched?"✅ 지역 먹이 획득!":"🍪 일반 먹이 획득");
+  document.getElementById("rItem").textContent = "인식: "+itemName;
+  document.getElementById("rFood").textContent = emoji+" "+feed.name;
+  document.getElementById("rXp").textContent = "+"+feed.xp+" XP" + (matched&&matched.type==="special"?" (10배 보너스!)":"");
+  document.getElementById("rPt").textContent = "+"+pt+" P";
+  state.lastReward = { feed, pt, itemName, emoji };
+  box.classList.add("show");
+}
+
+// ---- 캐릭터 성장 ----
+function feedChar(){
+  const m = state.currentMarket || MARKETS[0];
+  const c = m.char;
+  const r = state.lastReward || { feed:FEED.special, pt:120 };
+  addPoint(r.pt);
+  if(!state.dex.includes(c.key)) state.dex.push(c.key);
+  // 화면 채우기
+  document.getElementById("charImg").src = "/characters/"+c.img;
+  document.getElementById("growTitle").textContent = c.name+"가 성장했어요!";
+  document.getElementById("growName").textContent = c.name;
+  const tierEl = document.getElementById("growTier");
+  tierEl.textContent = starOf(c.tier)+" "+c.tier+" · "+c.motif;
+  tierEl.className = "tier "+c.grade;
+  document.getElementById("growPoint").textContent = state.point+" P";
+  document.getElementById("growDex").textContent = c.name+" ✓";
+  const xp = r.feed.xp;
+  document.getElementById("xpNum").textContent = xp;
+  document.getElementById("xpTxt").textContent = xp+" / 200 XP";
+  showExplore("grow");
+  setTimeout(()=>{
+    document.getElementById("xpfill").style.width = Math.min(xp/200*100,100)+"%";
+    document.getElementById("charBox").classList.add("pop");
+  },250);
+  syncHud();
+  toast(c.name+" 도감 등록 완료!");
+}
+function starOf(tier){
+  const map={"노말":"★","희귀":"★★","레어":"★★★","에픽":"★★★★","전설":"★★★★★"}; return map[tier]||"★★";
+}
+
+// ---- 포인트 ----
+function addPoint(n){ state.point+=n; syncHud(); }
+function convert(kind){ toast("💳 "+state.point+"P → "+kind+" 전환 (데모)"); }
+
+// ---- 토스트 ----
+function toast(msg){
+  const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(window._tt); window._tt=setTimeout(()=>t.classList.remove("show"),1900);
+}
+
+// ---- 시작 ----
+renderMap();
+syncHud();
+</script>
+</body>
+</html>
