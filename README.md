@@ -1,104 +1,169 @@
-# 로컬몬 GO · 전남편 — 프로토타입 (README)
+<div align="center">
 
-예선용 프로토타입입니다.
-**전체 흐름(지도 → 도착 → 영수증 → 캐릭터 성장 → 포인트)은 하드코딩 목업**이고,
-**영수증 OCR 한 곳만 네이버 CLOVA로 실제 작동**합니다. (기획서에서 강조한 "실구매 인증" 심장부)
+<img src="public/characters/mascot.png" width="120" alt="로컬몬 마스코트" />
 
----
+# 🏮 로컬몬 · 전남 (Local-Mon : Jeonnam)
 
-## 1. 폴더 구조
+**전라남도 특산물 캐릭터 수집형 지역소개 AI 서비스**
 
-```
-localmon-proto/
-├─ api/
-│  └─ ocr.js            ← CLOVA OCR 중계 서버리스 함수 (키 보호)
-├─ public/
-│  ├─ index.html        ← 앱 화면 전체 (프런트)
-│  └─ characters/       ← 여기에 배돌이.png 등 캐릭터 이미지
-├─ package.json
-├─ vercel.json
-└─ README.md
-```
+전통시장을 직접 방문하고, 실제로 구매할수록 캐릭터가 성장하는<br/>
+위치기반 탐험 서비스로 지역 경제 활성화에 기여합니다.
 
----
+<br/>
 
-## 2. 로컬에서 먼저 돌려보기
+![Track](https://img.shields.io/badge/2026_AI+X_해커톤-Track_2-2e5e3a?style=for-the-badge)
+![Region](https://img.shields.io/badge/전라남도-지역상권·특산물-e0a021?style=for-the-badge)
+![Team](https://img.shields.io/badge/Team-Strikers-7b4fd0?style=for-the-badge)
 
-```bash
-npm i -g vercel      # 최초 1회
-cd localmon-proto
-vercel dev           # http://localhost:3000
-```
+![HTML](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=black)
+![Node.js](https://img.shields.io/badge/Node.js-339933?logo=node.js&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-000000?logo=vercel&logoColor=white)
+![CLOVA OCR](https://img.shields.io/badge/NAVER_CLOVA-OCR-03C75A?logo=naver&logoColor=white)
 
-> OCR 키를 아직 안 넣었어도 화면 흐름은 다 돌아갑니다.
-> (OCR 실패 시 자동으로 '데모 모드'로 넘어가도록 폴백 처리되어 있어, 발표 중 사고 방지)
+</div>
 
 ---
 
-## 3. CLOVA OCR 키 발급 (실제 인식용)
+## 📌 한눈에 보기
 
-1. 네이버 클라우드 플랫폼(ncloud.com) 가입 → 콘솔
-2. **CLOVA OCR** 상품 신청 → **Domain** 생성 (일반 OCR / General)
-3. 생성된 도메인에서 두 값을 복사:
-   - **APIGW Invoke URL** (예: `https://xxxx.apigw.ntruss.com/custom/v1/.../general`)
-   - **Secret Key**
+> **"지역에서 실제로 물건을 살수록, 내 로컬몬이 자란다."**
 
----
+로컬몬 · 전남은 전라남도의 전통시장과 특산물을 게임으로 연결합니다.
+사용자는 지역을 방문해 특산물 캐릭터 **‘로컬몬’**을 수집하고, **영수증을 인증**하면
+캐릭터가 성장합니다. 특히 **전남 특산물을 구매하면 10배 경험치**를 주어,
+게임을 즐기는 것이 곧 지역 소비로 이어지도록 설계했습니다.
 
-## 4. Vercel 배포 (발표용 URL 만들기)
-
-```bash
-cd localmon-proto
-vercel               # 로그인 후 프로젝트 생성 (질문은 기본값 엔터)
-```
-
-배포 후 **환경변수 2개**를 등록 (Vercel 대시보드 → Settings → Environment Variables):
-
-| 이름 | 값 |
+| | |
 |---|---|
-| `CLOVA_OCR_URL` | 위에서 복사한 APIGW Invoke URL |
-| `CLOVA_OCR_SECRET` | Secret Key |
+|  **해결하려는 문제** | 특산물 인지도와 실제 구매의 괴리, 지역 상권 약화, 관광 쏠림 |
+|  **사용자** | 관광객·시민(수집·재미) / 외국인(다국어 안내) / 소상공인(실매출) |
+| ️ **핵심 루프** | 방문 → 영수증 OCR → 먹이 변환 → 캐릭터 성장 → 포인트 → 재방문 |
+|  **보상** | 포인트를 온누리상품권·지역화폐로 전환(1P = 1원) → 지역 내 재소비 |
 
-등록 후 재배포:
+---
+
+## 📱 서비스 화면
+
+| 탐험 (지도) | 캐릭터 성장 | 도감 | 포인트·랭크 |
+|:---:|:---:|:---:|:---:|
+| ![explore](docs/screenshots/explore.png) | ![grow](docs/screenshots/grow.png) | ![dex](docs/screenshots/dex.png) | ![point](docs/screenshots/point.png) |
+| 전남 지도에서 지역 선택 | 특산물 구매로 성장 | 수집·미수집 도감 | 랭크·먹이·업적 |
+
+<div align="center">
+
+**영수증 인증 → 특산물 전용 먹이 획득**
+
+<img src="docs/screenshots/reward.png" width="300" alt="영수증 인증 보상" />
+
+</div>
+
+---
+
+##  핵심 메커니즘
+
+```
+지역 방문 (GPS 체크인)
+      │
+      ▼
+영수증 촬영 ──► [CLOVA OCR] 품목 인식 ──► 전남 특산물 여부 판별
+      │
+      ▼
+먹이 아이템 변환   일반(+10 XP) · 지역(+30 XP) · 특산물 전용(+100 XP)
+      │
+      ▼
+캐릭터 성장 (랭크업)   노말 → 희귀 → 레어 → 에픽 → 전설
+      │
+      ▼
+포인트 지급 ──► 온누리상품권·지역화폐 전환 ──► 지역 내 재소비 (선순환)
+```
+
+특산물 전용 먹이는 일반 먹이의 **10배 경험치**를 줍니다.
+캐릭터를 빠르게 키우는 가장 효율적인 길이 곧 **전남 특산물 소비**가 되도록 하여,
+게임 목표(캐릭터 육성)와 서비스 목표(특산물 소비 촉진)를 일치시켰습니다.
+
+---
+
+##  로컬몬 캐릭터
+
+전남 각 지역의 대표 특산물을 모티브로 생성한 오리지널 캐릭터입니다.
+
+| 캐릭터 | 지역 | 특산물 | 등급 |
+|:---:|---|---|---|
+| <img src="public/characters/baedori.png" width="46"/> 배돌이 | 나주 남평장 | 나주 배 | ★★ 희귀 |
+| <img src="public/characters/gatsuni.png" width="46"/> 갓순이 | 여수 서시장 | 돌산갓 | ★★ 희귀 |
+| <img src="public/characters/nakjiwang.png" width="46"/> 낙지왕 | 목포 남부시장 | 세발낙지 | ★★★ 레어 |
+| <img src="public/characters/nokcha.png" width="46"/> 녹차선인 | 보성 벌교장 | 보성 녹차 | ★★★★ 에픽 |
+| <img src="public/characters/juksuni.png" width="46"/> 죽순이 | 담양장 | 담양 대나무 | ★★ 희귀 |
+| <img src="public/characters/jindo.png" width="46"/> 진도댕이 | 진도읍장 | 진도개 | ★★★★★ 전설 |
+| <img src="public/characters/yuja.png" width="46"/> 유자봉 | 고흥장 | 고흥 유자 | ★★★★ 에픽 |
+
+---
+
+## 적용 AI 기술
+
+| 모듈 | 기술 | 역할 |
+|---|---|---|
+| ① 캐릭터 생성·진화 | Generative AI · 이미지 분류 | 특산물 모티브 캐릭터 생성, 영수증 품목 인식 |
+| ② 동적 핫스팟 | Predictive · 가중치 기반 | 소외 지역에 희귀 로컬몬 출현 확률 상향 |
+| ③ 개인화 추천 | Collaborative Filtering | 방문 이력 기반 맞춤 미션 생성 |
+| ④ 다국어 도슨트 | LLM · RAG · 기계번역 | 외국인에게 특산물 정보 다국어 안내 |
+
+> 예선 프로토타입에서는 **① 영수증 OCR(CLOVA)**을 실제 구현하고,
+> 나머지는 기획·설계 단계로 제시합니다.
+
+---
+
+##️ 기술 스택
+
+- **Frontend** — HTML / CSS / Vanilla JavaScript (단일 페이지, 탭 기반)
+- **Backend** — Node.js Serverless Function (Vercel)
+- **OCR** — NAVER CLOVA OCR (영수증 품목 인식)
+- **Deploy** — Vercel
+
+### 활용 데이터
+공공데이터포털·AI-Hub의 관광·상권·특산물 데이터 13종
+(전통시장 표준데이터, 한국관광 데이터랩, 여행로그, 농산물 소매가격,
+음식·상품 이미지, 다국어 번역·말뭉치 등)
+
+---
+
+## 실행 방법
 
 ```bash
-vercel --prod
+# 로컬 실행 (이미지 표시를 위해 간단한 서버로 열기)
+cd public
+python3 -m http.server 8000
+# → http://localhost:8000
 ```
 
-→ 나오는 `https://....vercel.app` 주소를 **폰으로 열면 발표 시연 가능**.
+### 배포 (Vercel)
+1. 이 저장소를 Vercel에 Import
+2. 환경변수 등록: `CLOVA_OCR_URL`, `CLOVA_OCR_SECRET`
+3. Deploy → 발급된 URL로 접속
 
-> ⚠️ API 키는 절대 코드나 GitHub에 직접 쓰지 마세요. 반드시 환경변수로.
-
----
-
-## 5. 특산물 사전 늘리기 (팀 작업 포인트)
-
-`public/index.html` 안의 `SPECIALTY` 배열에 시장별 특산물을 추가하면
-OCR이 그 단어를 인식했을 때 '특산물 전용 먹이'로 처리합니다.
-
-```js
-{ key:["나주배","배"], name:"나주 배", emoji:"🍐", xp:200, pt:120, char:"배돌이" },
-```
-
-- `key`: 영수증에 찍힐 법한 표기들(띄어쓰기 무시하고 매칭)
-- 8개 시장 특산물을 채우면 그게 곧 발표용 콘텐츠
+> 자세한 배포·수정 방법은 [`GUIDE.md`](./GUIDE.md) 참고.
+> OCR 키가 없어도 데모 모드로 전체 흐름이 동작합니다.
 
 ---
 
-## 6. 발표 시연 시나리오 (추천 동선)
+## 👥 Team Strikers
 
-1. 지도에서 **나주 남평장** 마커 탭 → 체크인 +50P
-2. "로컬몬 만나러 가기" → 영수증 촬영 화면
-3. **나주 배가 찍힌 실제/샘플 영수증** 업로드 → CLOVA가 "나주배" 인식
-4. "특산물 전용 먹이 +200XP" 뜸 → 배돌이에게 먹이
-5. 배돌이 **레벨업 애니메이션** + 포인트 적립 → 지역화폐 전환
+> 볼링에서 핀을 한 번에 쓰러뜨리는 스트라이크처럼,
+> 관광객·소비자·소상공인이라는 여러 핀을 하나의 서비스로 한 번에 해결한다.
 
-> 한 사람의 여정으로 이어서 보여주면 심사위원이 서비스를 몸으로 이해합니다.
+| 이름 | 역할 | 소속 |
+|---|---|---|
+| 홍석훈 | 팀장 | 서울과학기술대학교 인공지능응용학과 |
+| 강주경 | 팀원 | 서울과학기술대학교 인공지능응용학과 |
+| 윤준호 | 팀원 | 서울과학기술대학교 인공지능응용학과 |
+| 이수 | 팀원 | 서울과학기술대학교 인공지능응용학과 |
 
 ---
 
-## 7. 데모 안전장치
+<div align="center">
 
-- OCR 서버 연결이 안 되거나 키가 없어도, 자동으로 샘플 텍스트("나주배...")로
-  넘어가 **데모가 끊기지 않습니다.** 발표 중 네트워크 사고 대비.
-- 실제 인식을 보여주고 싶으면 키를 넣고, 안전하게만 가려면 그대로 둬도 흐름은 동일.
+**2026 AI+X융합 문제발굴 해커톤 · Track #2**
+지역 산업·상권·특산물 — 광주·전남 지역 상권과 소비 경험을 혁신하는 AI 서비스
+
+</div>
