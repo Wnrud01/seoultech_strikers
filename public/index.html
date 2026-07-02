@@ -617,6 +617,7 @@ function sampleText(){
   return sp.key[0]+" 1개 15000 합계 15000";
 }
 function showReceiptResult(text, parsed){
+
   const clean = text.replace(/\s/g,"");
   let matched = null, region = null;
   for(const r of REGIONS){
@@ -643,7 +644,6 @@ function showReceiptResult(text, parsed){
   
   // 보상 데이터에 foodType 추가
   state.lastReward = { pt, region, foodType: isSpecial ? "special" : "general" };
-
   // ─ GPT-4o mini 구조화 응답 영수증 상세 표시 ───────────────────
   const detail = document.getElementById("receiptDetail");
   if(parsed && (parsed.store_name || (parsed.items && parsed.items.length > 0) || parsed.total_price)){
