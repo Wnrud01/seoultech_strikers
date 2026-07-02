@@ -1,13 +1,17 @@
 // api/ocr.js
+// 영수증 이미지 → gpt-5.4-mini Vision → 구조화된 JSON 반환
+//
 // [Vercel 배포 준비]
-// Vercel → Settings → Environment Variables 에 등록:
+// Vercel 프로젝트 Settings → Environment Variables 에 등록:
 //   OPENAI_API_KEY : OpenAI API 키 (sk-...)
 
 export const config = {
   api: {
-    bodyParser: { sizeLimit: "10mb" },
+    bodyParser: { sizeLimit: "10mb" }, // base64 이미지 수용
   },
 };
+
+const MODEL = "gpt-5.4-mini";
 
 const OCR_PROMPT = `다음은 영수증 OCR 텍스트입니다. 아래 3가지 항목만 추출하여 JSON으로 반환하세요.
 
@@ -48,6 +52,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "imageBase64 가 없습니다." });
   }
 
+  // data URL 형식 정규화
   let dataUrl = imageBase64;
   if (!imageBase64.startsWith("data:")) {
     const mime = format === "png" ? "image/png" : "image/jpeg";
@@ -58,9 +63,9 @@ export default async function handler(req, res) {
     const { OpenAI } = await import("openai");
     const client = new OpenAI({ apiKey });
 
-    // Step 1: Vision으로 이미지에서 텍스트 추출
+    // ── Step 1: Vision으로 이미지에서 텍스트 추출 ──────────────
     const visionRes = await client.chat.completions.create({
-      model: "gpt-5.4-mini",
+      model: MODEL,
       messages: [
         {
           role: "user",
@@ -76,18 +81,18 @@ export default async function handler(req, res) {
           ],
         },
       ],
-      max_tokens: 1000,
+      max_completion_tokens: 1000,
     });
 
     const ocrText = visionRes.choices[0]?.message?.content?.trim() || "";
 
-    // Step 2: 추출된 텍스트를 구조화된 JSON으로 파싱
+    // ── Step 2: 추출된 텍스트를 구조화된 JSON으로 파싱 ──────────
     const parsePrompt = OCR_PROMPT.replace("{{OCR_TEXT}}", ocrText);
 
     const parseRes = await client.chat.completions.create({
-      model: "gpt-5.4-mini",
+      model: MODEL,
       messages: [{ role: "user", content: parsePrompt }],
-      max_tokens: 800,
+      max_completion_tokens: 800,
       response_format: { type: "json_object" },
     });
 
