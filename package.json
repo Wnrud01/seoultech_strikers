@@ -1,10 +1,13 @@
 {
   "name": "localmon-toss",
   "version": "1.0.0",
-  "description": "로컬몬 GO 전남편 - 예선 프로토타입 (지도/체크인/캐릭터 목업 + CLOVA OCR 실연동)",
+  "description": "로컬몬 GO 전남편 - 예선 프로토타입 (지도/체크인/캐릭터 목업 + GPT-4o mini OCR)",
   "private": true,
   "scripts": {
     "dev": "vercel dev",
     "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "openai": "^4.47.1"
   }
 }

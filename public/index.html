@@ -195,6 +195,14 @@
   .ocr-result .big{ font-size:17px; font-weight:800; color:var(--blue-dark);}
   .ocr-result .row{ display:flex; justify-content:space-between; margin-top:10px; font-size:14px;}
   .ocr-result .row b{ color:var(--blue);}
+
+  /* 영수증 상세 파싱 결과 */
+  .receipt-detail{ background:#fff; border-radius:12px; padding:14px 16px; margin-top:12px; border:1px solid var(--gray-300);}
+  .receipt-detail .store{ font-size:15px; font-weight:800; color:var(--ink); margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--gray-100);}
+  .receipt-detail .item-row{ display:flex; justify-content:space-between; font-size:13px; color:var(--gray-700); padding:4px 0;}
+  .receipt-detail .item-row .item-name{ flex:1; margin-right:8px;}
+  .receipt-detail .item-row .item-price{ font-weight:700; color:var(--ink); white-space:nowrap;}
+  .receipt-detail .total-row{ display:flex; justify-content:space-between; font-size:14px; font-weight:800; color:var(--blue); padding-top:8px; margin-top:6px; border-top:1.5px solid var(--blue-light);}
   .btn{ display:block; width:100%; border:none; border-radius:14px; padding:16px; font-size:16px;
     font-weight:800; cursor:pointer; font-family:inherit; margin-top:12px;}
   .btn-blue{ background:var(--blue); color:#fff;}
@@ -314,6 +322,12 @@
       <div class="row"><span id="orItem"></span><b id="orFood"></b></div>
       <div class="row"><span>획득 경험치</span><b id="orXp"></b></div>
       <div class="row"><span>포인트 적립</span><b id="orPt"></b></div>
+      <!-- 영수증 파싱 상세 결과 -->
+      <div class="receipt-detail" id="receiptDetail" style="display:none;">
+        <div class="store" id="rdStore"></div>
+        <div id="rdItems"></div>
+        <div class="total-row" id="rdTotal" style="display:none;"></div>
+      </div>
       <button class="btn btn-blue" onclick="confirmReceipt()">확인</button>
     </div>
   </div>
@@ -588,11 +602,11 @@ async function handleReceipt(e){
         body:JSON.stringify({imageBase64:dataUrl,format:f.type.includes("png")?"png":"jpg"})});
       const data=await res.json();
       document.getElementById("ocrLoading").classList.remove("show");
-      if(!res.ok){ toast("OCR 연결 확인 필요 — 데모 모드"); return showReceiptResult(sampleText()); }
-      showReceiptResult(data.fullText||"");
+      if(!res.ok){ toast("OCR 오류: "+(data.error||"알 수 없는 오류")); return showReceiptResult(sampleText(), null); }
+      showReceiptResult(data.fullText||"", data);
     }catch(err){
       document.getElementById("ocrLoading").classList.remove("show");
-      toast("네트워크 오류 — 데모 모드"); showReceiptResult(sampleText());
+      toast("네트워크 오류 — 데모 모드"); showReceiptResult(sampleText(), null);
     }
   };
   reader.readAsDataURL(f);
@@ -602,7 +616,8 @@ function sampleText(){
   const sp = r.specialties.find(s=>s.type==="special")||r.specialties[0];
   return sp.key[0]+" 1개 15000 합계 15000";
 }
-function showReceiptResult(text){
+function showReceiptResult(text, parsed){
+
   const clean = text.replace(/\s/g,"");
   let matched = null, region = null;
   for(const r of REGIONS){
@@ -629,6 +644,36 @@ function showReceiptResult(text){
   
   // 보상 데이터에 foodType 추가
   state.lastReward = { pt, region, foodType: isSpecial ? "special" : "general" };
+  // ─ GPT-4o mini 구조화 응답 영수증 상세 표시 ───────────────────
+  const detail = document.getElementById("receiptDetail");
+  if(parsed && (parsed.store_name || (parsed.items && parsed.items.length > 0) || parsed.total_price)){
+    const rdStore = document.getElementById("rdStore");
+    rdStore.textContent = parsed.store_name ? "🏠 "+parsed.store_name : "";
+    rdStore.style.display = parsed.store_name ? "block" : "none";
+
+    const rdItems = document.getElementById("rdItems");
+    if(parsed.items && parsed.items.length > 0){
+      rdItems.innerHTML = parsed.items.map(item=>`
+        <div class="item-row">
+          <span class="item-name">${item.name}</span>
+          <span class="item-price">${item.price!=null ? item.price.toLocaleString()+"원" : ""}</span>
+        </div>`).join("");
+    } else {
+      rdItems.innerHTML = "";
+    }
+
+    const rdTotal = document.getElementById("rdTotal");
+    if(parsed.total_price != null){
+      rdTotal.innerHTML = `<span>합계</span><span>${parsed.total_price.toLocaleString()}원</span>`;
+      rdTotal.style.display = "flex";
+    } else {
+      rdTotal.style.display = "none";
+    }
+    detail.style.display = "block";
+  } else {
+    detail.style.display = "none";
+  }
+
   document.getElementById("ocrResult").classList.add("show");
 }
 function confirmReceipt(){

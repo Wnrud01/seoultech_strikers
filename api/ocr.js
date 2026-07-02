@@ -1,78 +1,122 @@
 // api/ocr.js
-// 브라우저 → (이 함수) → 네이버 CLOVA OCR → 결과 텍스트 반환
-// 목적: CLOVA API 키를 브라우저에 노출하지 않고 서버에서 중계 (CORS/보안 해결)
-//
-// [배포 전 준비]
-// Vercel 프로젝트 Settings → Environment Variables 에 아래 2개를 등록:
-//   CLOVA_OCR_URL     : CLOVA OCR에서 발급받은 APIGW Invoke URL
-//   CLOVA_OCR_SECRET  : CLOVA OCR Secret Key
-// (네이버 클라우드 플랫폼 > CLOVA OCR > Domain 생성 후 발급)
+// [Vercel 배포 준비]
+// Vercel → Settings → Environment Variables 에 등록:
+//   OPENAI_API_KEY : OpenAI API 키 (sk-...)
 
 export const config = {
   api: {
-    bodyParser: { sizeLimit: "10mb" }, // 영수증 이미지(base64) 수용
+    bodyParser: { sizeLimit: "10mb" },
   },
 };
+
+const OCR_PROMPT = `다음은 영수증 OCR 텍스트입니다. 아래 3가지 항목만 추출하여 JSON으로 반환하세요.
+
+규칙:
+- store_name: 가게 이름 (없으면 null)
+- items: 구매 품목 목록. 각 항목은 { "name": 품목명, "price": 숫자(원 단위 정수) } 형태
+- total_price: 최종 결제 금액 (숫자, 원 단위 정수. 없으면 null)
+- 금액은 숫자만 추출 (콤마, '원' 제거)
+- 품목명과 금액이 명확하지 않은 행은 제외
+- 반드시 JSON만 출력. 설명 금지.
+
+출력 형식:
+{
+  "store_name": "string | null",
+  "items": [
+    { "name": "string", "price": number }
+  ],
+  "total_price": number | null
+}
+
+영수증 텍스트:
+{{OCR_TEXT}}`;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "POST만 허용됩니다." });
   }
 
-  const OCR_URL = process.env.CLOVA_OCR_URL;
-  const OCR_SECRET = process.env.CLOVA_OCR_SECRET;
-
-  if (!OCR_URL || !OCR_SECRET) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
     return res.status(500).json({
-      error: "환경변수 CLOVA_OCR_URL / CLOVA_OCR_SECRET 가 설정되지 않았습니다.",
+      error: "환경변수 OPENAI_API_KEY 가 설정되지 않았습니다.",
     });
   }
 
+  const { imageBase64, format = "jpg" } = req.body;
+  if (!imageBase64) {
+    return res.status(400).json({ error: "imageBase64 가 없습니다." });
+  }
+
+  let dataUrl = imageBase64;
+  if (!imageBase64.startsWith("data:")) {
+    const mime = format === "png" ? "image/png" : "image/jpeg";
+    dataUrl = `data:${mime};base64,${imageBase64}`;
+  }
+
   try {
-    // 프런트에서 { imageBase64: "data:image/jpeg;base64,..." } 형태로 전송
-    const { imageBase64, format = "jpg" } = req.body;
-    if (!imageBase64) {
-      return res.status(400).json({ error: "imageBase64 가 없습니다." });
-    }
+    const { OpenAI } = await import("openai");
+    const client = new OpenAI({ apiKey });
 
-    // data URL 접두사 제거 (순수 base64만 CLOVA에 전달)
-    const pureBase64 = imageBase64.includes(",")
-      ? imageBase64.split(",")[1]
-      : imageBase64;
-
-    const clovaBody = {
-      version: "V2",
-      requestId: "localmon-" + Date.now(),
-      timestamp: Date.now(),
-      images: [{ format, name: "receipt", data: pureBase64 }],
-    };
-
-    const clovaRes = await fetch(OCR_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-OCR-SECRET": OCR_SECRET,
-      },
-      body: JSON.stringify(clovaBody),
+    // Step 1: Vision으로 이미지에서 텍스트 추출
+    const visionRes = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "이 영수증 이미지에서 모든 텍스트를 그대로 추출해주세요. 줄바꿈을 유지하고 인식된 텍스트만 출력하세요.",
+            },
+            {
+              type: "image_url",
+              image_url: { url: dataUrl, detail: "high" },
+            },
+          ],
+        },
+      ],
+      max_tokens: 1000,
     });
 
-    if (!clovaRes.ok) {
-      const text = await clovaRes.text();
-      return res.status(502).json({ error: "CLOVA 호출 실패", detail: text });
+    const ocrText = visionRes.choices[0]?.message?.content?.trim() || "";
+
+    // Step 2: 추출된 텍스트를 구조화된 JSON으로 파싱
+    const parsePrompt = OCR_PROMPT.replace("{{OCR_TEXT}}", ocrText);
+
+    const parseRes = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: parsePrompt }],
+      max_tokens: 800,
+      response_format: { type: "json_object" },
+    });
+
+    const rawJson = parseRes.choices[0]?.message?.content?.trim() || "{}";
+    let parsed;
+    try {
+      parsed = JSON.parse(rawJson);
+    } catch {
+      parsed = { store_name: null, items: [], total_price: null };
     }
 
-    const data = await clovaRes.json();
-
-    // 인식된 모든 텍스트를 한 줄로 합쳐서 반환 (프런트에서 특산물 키워드 매칭)
-    const fields = data?.images?.[0]?.fields || [];
-    const fullText = fields.map((f) => f.inferText).join(" ");
+    // 기존 특산물 키워드 매칭용 fullText 생성 (하위 호환)
+    const itemNames = (parsed.items || []).map((i) => i.name).join(" ");
+    const fullText = [parsed.store_name || "", itemNames, ocrText]
+      .filter(Boolean)
+      .join(" ");
 
     return res.status(200).json({
-      fullText,             // 예: "나주배 3개 15000 ... 합계 15000"
-      fields,               // 상세(원하면 프런트에서 활용)
-      raw: data,            // 디버깅용 (배포 시 제거해도 됨)
+      store_name: parsed.store_name ?? null,
+      items: parsed.items ?? [],
+      total_price: parsed.total_price ?? null,
+      fullText,
+      ocrText,
     });
   } catch (err) {
-    return res.status(500).json({ error: "서버 오류", detail: String(err) });
+    console.error("[OCR Error]", err);
+    return res.status(500).json({
+      error: "OCR 처리 중 오류가 발생했습니다.",
+      detail: String(err?.message || err),
+    });
   }
 }
