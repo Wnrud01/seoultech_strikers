@@ -60,7 +60,7 @@ export default async function handler(req, res) {
 
     // Step 1: Vision으로 이미지에서 텍스트 추출
     const visionRes = await client.chat.completions.create({
-      model: "gpt-5.5-mini",
+      model: "gpt-5.4-mini",
       messages: [
         {
           role: "user",
@@ -85,7 +85,7 @@ export default async function handler(req, res) {
     const parsePrompt = OCR_PROMPT.replace("{{OCR_TEXT}}", ocrText);
 
     const parseRes = await client.chat.completions.create({
-      model: "gpt-5.5-mini",
+      model: "gpt-5.4-mini",
       messages: [{ role: "user", content: parsePrompt }],
       max_tokens: 800,
       response_format: { type: "json_object" },
